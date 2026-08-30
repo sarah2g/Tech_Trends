@@ -8,12 +8,12 @@ class userController extends Controller
 {
     public function index()
     {
-        $users = User::all();
+        $users = User::all()->paginate(10);
         return view('dashboard.user', compact('users'));
     }
     public function show($id)
     {
-        // Logic to retrieve user data based on the provided ID
+       
         $user = User::find($id);
 
         if (!$user) {
@@ -28,7 +28,7 @@ class userController extends Controller
     }
     public function add(Request $request)
     {
-        // Logic to add a new user based on the request data
+        
         $validatedData = $request->validate([
             'firstname' => 'required|string|max:255',
             'lastname' => 'required|string|max:255',

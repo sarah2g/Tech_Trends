@@ -8,7 +8,7 @@ class categoryCotroller extends Controller
 {
     public function index()
     {
-        $categories = Category::all();
+        $categories = Category::all()->paginate(10);
         return view('dashboard.category', compact('categories'));
     }
     public function show($id)
