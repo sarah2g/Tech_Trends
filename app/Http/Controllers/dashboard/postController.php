@@ -1,81 +1,92 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\dashboard;
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use App\Models\Post;
-class postCotroller extends Controller
+use Illuminate\Http\Request;
+
+class postController extends Controller
 {
     public function index()
     {
-        $posts = Post::all()->paginate(10);
+        $posts = Post::paginate(10);
+
         return view('dashboard.post', compact('posts'));
     }
+
     public function show($id)
     {
-        // Logic to retrieve post data based on the provided ID
         $post = Post::find($id);
 
-        if (!$post) {
+        if (! $post) {
             return redirect()->route('dashboard.post')->with('error', 'Post not found.');
         }
 
         return view('dashboard.post', compact('post'));
     }
-    public function create()
+
+    public function addPost()
     {
         return view('dashboard.addpost');
     }
-    public function store(Request $request){
-        $post = $request->validate([
+
+    public function add(Request $request)
+    {
+        $validatedData = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string',
             'category_id' => 'required|exists:categories,id',
         ]);
+
         Post::create([
-            'title' => $post['title'],
-            'content' => $post['content'],
-            'category_id' => $post['category_id'],
+            'title' => $validatedData['title'],
+            'content' => $validatedData['content'],
+            'category_id' => $validatedData['category_id'],
         ]);
+
         return redirect()->route('dashboard.post')->with('success', 'Post created successfully.');
     }
-    public function edit($id)
+
+    public function editPost($id)
     {
         $post = Post::find($id);
 
-        if (!$post) {
+        if (! $post) {
             return redirect()->route('dashboard.post')->with('error', 'Post not found.');
         }
 
         return view('dashboard.editpost', compact('post'));
     }
+
     public function update(Request $request, $id)
     {
         $post = Post::find($id);
 
-        if (!$post) {
+        if (! $post) {
             return redirect()->route('dashboard.post')->with('error', 'Post not found.');
         }
 
-        $data = $request->validate([
+        $validatedData = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string',
             'category_id' => 'required|exists:categories,id',
         ]);
 
         $post->update([
-            'title' => $data['title'],
-            'content' => $data['content'],
-            'category_id' => $data['category_id'],
+            'title' => $validatedData['title'],
+            'content' => $validatedData['content'],
+            'category_id' => $validatedData['category_id'],
         ]);
 
         return redirect()->route('dashboard.post')->with('success', 'Post updated successfully.');
     }
-    public function destroy($id)
+
+    public function delete($id)
     {
         $post = Post::find($id);
 
-        if (!$post) {
+        if (! $post) {
             return redirect()->route('dashboard.post')->with('error', 'Post not found.');
         }
 
