@@ -12,7 +12,7 @@ class categoryController extends Controller
     {
         $categories = Category::paginate(10);
 
-        return view('dashboard.category', compact('categories'));
+        return view('admin.categorymanagment', compact('categories'));
     }
 
     public function show($id)
@@ -23,23 +23,23 @@ class categoryController extends Controller
             return redirect()->route('dashboard.category')->with('error', 'Category not found.');
         }
 
-        return view('dashboard.category', compact('category'));
+        return view('admin.categorymanagment', compact('category'));
     }
 
     public function addCategory()
     {
-        return view('dashboard.addcategory');
+        return view('admin.addcategory');
     }
 
     public function add(Request $request)
     {
         $validatedData = $request->validate([
-            'name' => 'required|string|max:255|unique:categories,name',
+            'title' => 'required|string|max:255|unique:categories,title',
             'description' => 'nullable|string',
         ]);
 
         Category::create([
-            'name' => $validatedData['name'],
+            'title' => $validatedData['title'],
             'description' => $validatedData['description'] ?? null,
         ]);
 
@@ -54,7 +54,7 @@ class categoryController extends Controller
             return redirect()->route('dashboard.category')->with('error', 'Category not found.');
         }
 
-        return view('dashboard.editcategory', compact('category'));
+        return view('admin.editcategory', compact('category'));
     }
 
     public function update(Request $request, $id)
@@ -66,12 +66,12 @@ class categoryController extends Controller
         }
 
         $validatedData = $request->validate([
-            'name' => 'required|string|max:255|unique:categories,name,'.$category->id,
+            'title' => 'required|string|max:255|unique:categories,title,'.$category->id,
             'description' => 'nullable|string',
         ]);
 
         $category->update([
-            'name' => $validatedData['name'],
+            'title' => $validatedData['title'],
             'description' => $validatedData['description'] ?? null,
         ]);
 

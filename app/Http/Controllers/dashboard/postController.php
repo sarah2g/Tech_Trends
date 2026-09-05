@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Post;
 use Illuminate\Http\Request;
 
@@ -10,39 +11,51 @@ class postController extends Controller
 {
     public function index()
     {
-        $posts = Post::paginate(10);
+        $posts = Post::with('category')->paginate(10);
 
-        return view('dashboard.post', compact('posts'));
+        return view('admin.dashboard', compact('posts'));
     }
 
     public function show($id)
     {
-        $post = Post::find($id);
+        $post = Post::with('category')->find($id);
 
         if (! $post) {
             return redirect()->route('dashboard.post')->with('error', 'Post not found.');
         }
 
-        return view('dashboard.post', compact('post'));
+        return view('admin.dashboard', compact('post'));
     }
 
     public function addPost()
     {
-        return view('dashboard.addpost');
+        $categories = Category::orderBy('title')->get();
+
+        return view('admin.addpost', compact('categories'));
     }
 
     public function add(Request $request)
     {
         $validatedData = $request->validate([
             'title' => 'required|string|max:255',
-            'content' => 'required|string',
+            'body' => 'required|string',
             'category_id' => 'required|exists:categories,id',
+            'is_featured' => 'sometimes|boolean',
+            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
+
+        $thumbnailPath = null;
+
+        if ($request->hasFile('thumbnail')) {
+            $thumbnailPath = $request->file('thumbnail')->store('thumbnails', 'public');
+        }
 
         Post::create([
             'title' => $validatedData['title'],
-            'content' => $validatedData['content'],
+            'body' => $validatedData['body'],
             'category_id' => $validatedData['category_id'],
+            'is_featured' => $request->boolean('is_featured'),
+            'thumbnail' => $thumbnailPath,
         ]);
 
         return redirect()->route('dashboard.post')->with('success', 'Post created successfully.');
@@ -50,13 +63,15 @@ class postController extends Controller
 
     public function editPost($id)
     {
-        $post = Post::find($id);
+        $post = Post::with('category')->find($id);
 
         if (! $post) {
             return redirect()->route('dashboard.post')->with('error', 'Post not found.');
         }
 
-        return view('dashboard.editpost', compact('post'));
+        $categories = Category::orderBy('title')->get();
+
+        return view('admin.editpost', compact('post', 'categories'));
     }
 
     public function update(Request $request, $id)
@@ -69,14 +84,24 @@ class postController extends Controller
 
         $validatedData = $request->validate([
             'title' => 'required|string|max:255',
-            'content' => 'required|string',
+            'body' => 'required|string',
             'category_id' => 'required|exists:categories,id',
+            'is_featured' => 'sometimes|boolean',
+            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
+
+        $thumbnailPath = $post->thumbnail;
+
+        if ($request->hasFile('thumbnail')) {
+            $thumbnailPath = $request->file('thumbnail')->store('thumbnails', 'public');
+        }
 
         $post->update([
             'title' => $validatedData['title'],
-            'content' => $validatedData['content'],
+            'body' => $validatedData['body'],
             'category_id' => $validatedData['category_id'],
+            'is_featured' => $request->boolean('is_featured'),
+            'thumbnail' => $thumbnailPath,
         ]);
 
         return redirect()->route('dashboard.post')->with('success', 'Post updated successfully.');

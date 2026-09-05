@@ -10,9 +10,9 @@ class userController extends Controller
 {
     public function index()
     {
-        $users = User::all()->paginate(10);
+        $users = User::orderBy('firstname')->paginate(10);
 
-        return view('dashboard.user', compact('users'));
+        return view('admin.usermanagment', compact('users'));
     }
 
     public function show($id)
@@ -24,12 +24,12 @@ class userController extends Controller
             return redirect()->route('dashboard.user')->with('error', 'User not found.');
         }
 
-        return view('dashboard.user', compact('user'));
+        return view('admin.usermanagment', compact('user'));
     }
 
     public function addUser()
     {
-        return view('dashboard.adduser');
+        return view('admin.adduser');
     }
 
     public function add(Request $request)
@@ -46,6 +46,12 @@ class userController extends Controller
             'user_avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
+        $avatarPath = null;
+
+        if ($request->hasFile('user_avatar')) {
+            $avatarPath = $request->file('user_avatar')->store('avatars', 'public');
+        }
+
         $user = User::create([
             'firstname' => $validatedData['firstname'],
             'lastname' => $validatedData['lastname'],
@@ -53,10 +59,10 @@ class userController extends Controller
             'email' => $validatedData['email'],
             'role' => $validatedData['role'],
             'password' => bcrypt($validatedData['password']),
-            'user_avatar' => $validatedData['user_avatar'] ?? null,
+            'user_avatar' => $avatarPath,
         ]);
 
-        return redirect()->route('dashboard.adduser')->with('success', 'User added successfully.');
+        return redirect()->route('dashboard.user')->with('success', 'User added successfully.');
     }
 
     public function editUser($id)
@@ -67,7 +73,7 @@ class userController extends Controller
             return redirect()->route('dashboard.user')->with('error', 'User not found.');
         }
 
-        return view('dashboard.edituser', compact('user'));
+        return view('admin.edituser', compact('user'));
     }
 
     public function update(Request $request, $id)
@@ -76,18 +82,23 @@ class userController extends Controller
         $validatedData = $request->validate([
             'firstname' => 'required|string|max:255',
             'lastname' => 'required|string|max:255',
-
             'role' => 'required|in:user,admin,author',
             'password' => 'nullable|string|min:8|confirmed',
-
+            'user_avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
+
+        $avatarPath = $user->user_avatar;
+
+        if ($request->hasFile('user_avatar')) {
+            $avatarPath = $request->file('user_avatar')->store('avatars', 'public');
+        }
+
         $user->update([
             'firstname' => $validatedData['firstname'],
             'lastname' => $validatedData['lastname'],
-
             'role' => $validatedData['role'],
             'password' => $validatedData['password'] ? bcrypt($validatedData['password']) : $user->password,
-
+            'user_avatar' => $avatarPath,
         ]);
 
         return redirect()->route('dashboard.user')->with('success', 'User updated successfully.');
@@ -110,12 +121,17 @@ class userController extends Controller
     public function search(Request $request)
     {
         $searchTerm = $request->input('search');
-        $users = User::where('firstname', 'like', '%'.$searchTerm.'%')
-            ->orWhere('lastname', 'like', '%'.$searchTerm.'%')
-            ->orWhere('username', 'like', '%'.$searchTerm.'%')
-            ->orWhere('email', 'like', '%'.$searchTerm.'%')
-            ->get();
 
-        return view('dashboard.user', compact('users'));
+        $users = User::query()
+            ->when($searchTerm, function ($query, $searchTerm) {
+                return $query->where('firstname', 'like', '%'.$searchTerm.'%')
+                    ->orWhere('lastname', 'like', '%'.$searchTerm.'%')
+                    ->orWhere('username', 'like', '%'.$searchTerm.'%')
+                    ->orWhere('email', 'like', '%'.$searchTerm.'%');
+            })
+            ->orderBy('firstname')
+            ->paginate(10);
+
+        return view('admin.usermanagment', compact('users'));
     }
 }
